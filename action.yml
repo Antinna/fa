@@ -1,11 +1,11 @@
-name: "Build & Deploy Flutter Web App to GitHub Pages (MAC Runner)"
-description: "Automates the build and deployment of your Flutter web app on GitHub Pages, only runs on MAC runner"
+name: "Build & Deploy Flutter App and Flutter Web to GitHub Pages"
+description: "Automates the build and deployment of your Flutter app and GitHub Pages"
 author: "manishmg3994"
 branding:
   color: "red"
-  icon: "rocket"
+  icon: archive
 
-inputs:
+inputs: #ToDo: flutter test inputs and Functionality 
   release:
     description: "If set to `true`, it will run release builds, otherwise debug builds"
     required: false
