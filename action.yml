@@ -1,0 +1,320 @@
+name: "Build & Deploy Flutter Web App to GitHub Pages (MAC Runner)"
+description: "Automates the build and deployment of your Flutter web app on GitHub Pages, only runs on MAC runner"
+author: "manishmg3994"
+branding:
+  color: "red"
+  icon: "rocket"
+
+inputs:
+  release:
+    description: "If set to `true`, it will run release builds, otherwise debug builds"
+    required: false
+    default: false
+  keystore:
+    description: "Base64 encoded keystore.jks, required if release is true"
+    required: false
+    default: ""
+  keystore-pwd:
+    description: "keystore password, required if release is true"
+    required: false
+    default: ""
+  key-pwd:
+    description: "key password, required if release is true"
+    required: false
+    default: ""
+  aab_generation:
+    description: "Generate AAB"
+    required: false
+    default: false
+    type: boolean
+  apk_generation:
+    description: "Generate APK"
+    required: false
+    default: false
+    type: boolean
+  ipa_generation:
+    description: "Generate IPA (iOS)"
+    required: false
+    default: false
+    type: boolean
+  dmg_generation:
+    description: "Generate DMG (macOS)"
+    required: false
+    default: false
+    type: boolean
+  appImage_generation:
+    description: "Generate LINUX APPIMAGE (Linux)"
+    required: false
+    default: false
+    type: boolean
+  exe_generation:
+    description: "Generate EXE (Windows)"
+    required: false
+    default: false
+    type: boolean
+  gh_pages:
+    description: "Deploy to GitHub Pages"
+    required: false
+    default: false
+    type: boolean
+  build_runner_build:
+    description: "Build Runner Build"
+    required: false
+    default: false
+    type: boolean
+  change_splash:
+    description: "Change Splash"
+    required: false
+    default: false
+    type: boolean
+  i18n_generation:
+    description: "Generate i18n"
+    required: false
+    default: false
+    type: boolean
+  generate_launcher_icons:
+    description: "Generate Launcher Icons"
+    required: false
+    default: false
+    type: boolean
+  custom_app_name:
+    description: "Custom App Name (Leave empty to skip)"
+    required: false
+    type: string
+  custom_package_name:
+    description: "Custom Package Name (Leave empty to skip)"
+    required: false
+    type: string
+  webRenderer:
+    description: "Which web renderer to be used, default is auto"
+    required: false
+    default: auto
+    type: string
+  workingDir:
+    description: "The directory where the project is (default .)"
+    required: false
+    default: .
+    type: string
+  targetBranch:
+    required: false
+    default: gh-pages
+    type: string
+  baseHref:
+    description: "base href (if applicable)"
+    required: false
+    default: "/"
+    type: string
+  customArgs:
+    description: 'Custom args like: --dart-define="key=value"'
+    required: false
+    default:
+    type: string
+
+outputs:
+  apk-path:
+    description: "Path to built apk if build-type was set to apk or aab"
+    value: ${{ steps.android-path-output.outputs.apk-path }}
+  aab-path:
+    description: "Path to built aab if build-type was set to aab or aab"
+    value: ${{ steps.android-path-output.outputs.aab-path }}
+  ipa-path:
+    description: "Path to built IPA file if build-type was set for iOS"
+    value: ${{ steps.ios-path-output.outputs.ipa-path }}
+  dmg-path:
+    description: "Path to built DMG file if build-type was set for macOS"
+    value: ${{ steps.mac-path-output.outputs.dmg-path }}
+  appImage-path:
+    description: "Path to built APPIMAGE file if build-type was set for Linux"
+    value: ${{ steps.linux-path-output.outputs.appImage-path }}
+  exe-path:
+    description: "Path to built EXE file if build-type was set for Windows"
+    value: ${{ steps.windows-path-output.outputs.exe-path }}
+
+runs:
+  using: "composite"
+  steps:
+    - run: |
+        flutter pub get
+        echo "${{ inputs.keystore }}" | base64 -d > android/keystore.jks
+      shell: bash
+      working-directory: ${{inputs.workingDir}}
+    - env:
+        KEY_PWD: ${{ inputs.key-pwd }}
+        KEYSTORE_PWD: ${{ inputs.keystore-pwd }}
+      shell: bash
+      run: |
+        echo "Keystore key Password Set in Environment with Variable Name : KEY_PWD "
+    - if: ${{ inputs.custom_package_name != '' ||  inputs.custom_app_name != ''}}
+      run: flutter pub global activate rename
+      shell: bash
+      working-directory: ${{inputs.workingDir}}
+    - if: ${{ inputs.build_runner_build == 'true' }}
+      run: flutter packages pub run build_runner build --delete-conflicting-outputs
+      shell: bash
+      working-directory: ${{inputs.workingDir}}
+    - if: ${{ inputs.change_splash == 'true' }}
+      run: flutter pub run flutter_native_splash:create
+      shell: bash
+      working-directory: ${{inputs.workingDir}}
+    - if: ${{ inputs.generate_launcher_icons == 'true' }}
+      run: flutter pub run flutter_launcher_icons
+      shell: bash
+      working-directory: ${{inputs.workingDir}}
+    - if: ${{ inputs.i18n_generation == 'true' }}
+      run: flutter gen-l10n
+      shell: bash
+      working-directory: ${{inputs.workingDir}}
+    - if: ${{ inputs.custom_app_name != '' }}
+      run: rename setAppName --value "${{ inputs.custom_app_name }}"
+      shell: bash
+      working-directory: ${{inputs.workingDir}}
+    - if: ${{ inputs.custom_package_name != '' }}
+      run: rename setBundleId --value "${{ inputs.custom_package_name }}"
+      shell: bash
+      working-directory: ${{inputs.workingDir}}
+    - if: ${{ inputs.aab_generation == 'true' || inputs.apk_generation == 'true'  }}
+      run: |
+        if [[ ${{ inputs.release }} == true ]]; then
+          if [[ ${{ inputs.apk_generation }} == true ]]; then
+            flutter build apk --release --split-per-abi ${{inputs.customArgs}} || true
+          fi
+          if [[ ${{ inputs.aab_generation }} == true ]]; then
+            flutter build appbundle --release ${{inputs.customArgs}} || true
+          fi
+        else
+          if [[ ${{ inputs.apk_generation }} == true ]]; then
+            flutter build apk --debug ${{inputs.customArgs}} || true
+          fi
+          if [[ ${{ inputs.aab_generation }} == true ]]; then
+            flutter build appbundle --debug ${{inputs.customArgs}} || true
+          fi
+        fi
+      shell: bash
+      working-directory: ${{inputs.workingDir}}
+    - if: ${{ inputs.aab_generation == 'true' || inputs.apk_generation == 'true'  }}
+      run: |
+        if [ ${{ inputs.release }} = "true" ]; then
+          if [[ ${{ inputs.apk_generation }} == true ]]; then
+            APK_PATH=build/app/outputs/apk/release/$(ls build/app/outputs/apk/release | grep apk)
+            if [ ! -f $APK_PATH ]; then
+              exit 1
+            fi
+            echo "apk-path=$APK_PATH" >> $GITHUB_ENV
+          fi
+          if [[ ${{ inputs.aab_generation }} == true ]]; then
+            AAB_PATH=build/app/outputs/bundle/release/$(ls build/app/outputs/bundle/release | grep aab)
+            if [ ! -f $AAB_PATH ]; then
+              exit 1
+            fi
+            echo "aab-path=$AAB_PATH" >> $GITHUB_ENV
+          fi
+        else
+          if [[ ${{ inputs.apk_generation }} == true ]]; then
+            APK_PATH=build/app/outputs/apk/debug/$(ls build/app/outputs/apk/debug | grep apk)
+            if [ ! -f $APK_PATH ]; then
+              exit 1
+            fi
+            echo "apk-path=$APK_PATH" >> $GITHUB_ENV
+          fi
+          if [[ ${{ inputs.aab_generation }} == true ]]; then
+            AAB_PATH=build/app/outputs/bundle/debug/$(ls build/app/outputs/bundle/debug | grep aab)
+            if [ ! -f $AAB_PATH ]; then
+              exit 1
+            fi
+            echo "aab-path=$AAB_PATH" >> $GITHUB_ENV
+          fi
+        fi
+      shell: bash
+      id: android-path-output
+      working-directory: ${{inputs.workingDir}}
+    - if: ${{ inputs.ipa_generation == 'true' && runner.os == 'macOS'}}
+      run: |
+        if [[ ${{ inputs.release }} == true ]]; then
+          flutter build ios --release ${{inputs.customArgs}}
+          IPA_PATH=build/ios/iphoneos/$(ls build/ios/iphoneos/ | grep ipa)
+          if [ ! -f $IPA_PATH ]; then
+            exit 1
+          fi
+          echo "ipa-path=$IPA_PATH" >> $GITHUB_ENV
+        else
+          flutter build ios --debug ${{inputs.customArgs}}
+          IPA_PATH=build/ios/iphoneos/$(ls build/ios/iphoneos/ | grep ipa)
+          if [ ! -f $IPA_PATH ]; then
+            exit 1
+          fi
+          echo "ipa-path=$IPA_PATH" >> $GITHUB_ENV
+        fi
+      shell: bash
+      id: ios-path-output
+      working-directory: ${{inputs.workingDir}}
+    - if: ${{ inputs.dmg_generation == 'true' && runner.os == 'macOS'}}
+      run: |
+        if [[ ${{ inputs.release }} == true ]]; then
+          flutter build macos --release ${{inputs.customArgs}}
+          DMG_PATH=build/macos/Build/Products/Release/$(ls build/macos/Build/Products/Release/ | grep dmg)
+          if [ ! -f $DMG_PATH ]; then
+            exit 1
+          fi
+          echo "dmg-path=$DMG_PATH" >> $GITHUB_ENV
+        else
+          flutter build macos --debug ${{inputs.customArgs}}
+          DMG_PATH=build/macos/Build/Products/Debug/$(ls build/macos/Build/Products/Debug/ | grep dmg)
+          if [ ! -f $DMG_PATH ]; then
+            exit 1
+          fi
+          echo "dmg-path=$DMG_PATH" >> $GITHUB_ENV
+        fi
+      shell: bash
+      id: mac-path-output
+      working-directory: ${{inputs.workingDir}}
+    - if: ${{ inputs.appImage_generation == 'true' && runner.os == 'Linux'}}
+      run: |
+        if [[ ${{ inputs.release }} == true ]]; then
+          flutter build linux --release ${{inputs.customArgs}}
+          APPIMAGE_PATH=build/linux/x64/release/$(ls build/linux/x64/release/ | grep AppImage)
+          if [ ! -f $APPIMAGE_PATH ]; then
+            exit 1
+          fi
+          echo "appImage-path=$APPIMAGE_PATH" >> $GITHUB_ENV
+        else
+          flutter build linux --debug ${{inputs.customArgs}}
+          APPIMAGE_PATH=build/linux/x64/debug/$(ls build/linux/x64/debug/ | grep AppImage)
+          if [ ! -f $APPIMAGE_PATH ]; then
+            exit 1
+          fi
+          echo "appImage-path=$APPIMAGE_PATH" >> $GITHUB_ENV
+        fi
+      shell: bash
+      id: linux-path-output
+      working-directory: ${{inputs.workingDir}}
+    - if: ${{ inputs.exe_generation == 'true' && runner.os == 'Windows'}}
+      run: |
+        if [[ ${{ inputs.release }} == true ]]; then
+          flutter build windows --release ${{inputs.customArgs}}
+          EXE_PATH=build/windows/runner/Release/$(ls build/windows/runner/Release/ | grep exe)
+          if [ ! -f $EXE_PATH ]; then
+            exit 1
+          fi
+          echo "exe-path=$EXE_PATH" >> $GITHUB_ENV
+        else
+          flutter build windows --debug ${{inputs.customArgs}}
+          EXE_PATH=build/windows/runner/Debug/$(ls build/windows/runner/Debug/ | grep exe)
+          if [ ! -f $EXE_PATH ]; then
+            exit 1
+          fi
+          echo "exe-path=$EXE_PATH" >> $GITHUB_ENV
+        fi
+      shell: bash
+      id: windows-path-output
+      working-directory: ${{inputs.workingDir}}
+    - if: ${{ inputs.gh_pages == 'true' }}
+      run: |
+        flutter config --enable-web
+        flutter build web --$([[ ${{ inputs.release }} == 'true' ]] && echo "release" || echo "debug") --web-renderer=${{inputs.webRenderer}} --base-href ${{inputs.baseHref}} ${{inputs.customArgs}}
+        git config user.name github-actions
+        git config user.email github-actions@github.com
+        git --work-tree build/web add --all
+        git commit -m "Automatic deployment by github-actions"
+        git push origin HEAD:${{inputs.targetBranch}} --force
+      shell: bash
+      working-directory: ${{inputs.workingDir}}
