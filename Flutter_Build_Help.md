@@ -1,14 +1,24 @@
-# Windows
----
+# All Build Commands
 ```bash
 Available subcommands:
-  aar         Build a repository containing an AAR and a POM file.
-  apk         Build an Android APK file from your app.
-  appbundle   Build an Android App Bundle file from your app.
-  bundle      Build the Flutter assets directory from your app.
-  web         Build a web application bundle.
-  windows     Build a Windows desktop application.
+  aar               Build a repository containing an AAR and a POM file.
+  apk               Build an Android APK file from your app.
+  appbundle         Build an Android App Bundle file from your app.
+  bundle            Build the Flutter assets directory from your app.
+  ios               Build an iOS application bundle (macOS host only).
+  ios-framework     Produces .xcframeworks for a Flutter project and its plugins for integration into existing, plain iOS Xcode projects.
+  ipa               Build an iOS archive bundle and IPA for distribution (macOS host only).
+  macos             Build a macOS desktop application.
+  macos-framework   Produces .xcframeworks for a Flutter project and its plugins for integration into existing, plain macOS Xcode projects.
+  web               Build a web application bundle.
+  linux             Build a Linux desktop application.
+  windows           Build a Windows desktop application.
 ```
+---
+
+# Windows
+---
+
 ```bash
 flutter build -h
 Build an executable app or install bundle.
