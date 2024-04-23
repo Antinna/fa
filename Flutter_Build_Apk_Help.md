@@ -1,3 +1,6 @@
+`flutter build apk`
+> build\app\outputs\flutter-apk\app-release.apk
+
 ```bash
  flutter build apk -h
 Build an Android APK file from your app.
