@@ -1,3 +1,5 @@
+# Windows
+---
 ```bash
 Available subcommands:
   aar         Build a repository containing an AAR and a POM file.
@@ -34,3 +36,4 @@ Available subcommands:
   web         Build a web application bundle.
   windows     Build a Windows desktop application.
 ```
+---
