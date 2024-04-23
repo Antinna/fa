@@ -1,3 +1,5 @@
+`flutter build windows`
+> build\windows\x64\runner\Release\fa.exe
 ```bash
 flutter build windows -h
 Build a Windows desktop application.
