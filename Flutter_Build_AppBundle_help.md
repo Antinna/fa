@@ -1,3 +1,6 @@
+`flutter build appbundle`
+> build\app\outputs\bundle\release\app-release.aab
+
 ```bash
 flutter build appbundle -h
 Build an Android App Bundle file from your app.
